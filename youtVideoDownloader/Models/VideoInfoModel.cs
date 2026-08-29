@@ -8,10 +8,10 @@ namespace youtVideoDownloader.Models
 {
     public class VideoInfoModel
     {
-        public string Title { get; set; }
-        public string Author { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Author { get; set; } = string.Empty;
         public TimeSpan Duration { get; set; }
-        public string ThumbnailUrl { get; set; }
-        public string VideoUrl { get; set; }
+        public string? ThumbnailUrl { get; set; }
+        public string VideoUrl { get; set; } = string.Empty;
     }
 }

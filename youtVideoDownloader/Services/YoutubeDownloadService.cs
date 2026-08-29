@@ -18,11 +18,14 @@ namespace youtVideoDownloader.Services
             _youtube = new YoutubeClient();
         }
 
-        public async Task<VideoInfoModel> GetVideoInfoAsync(string videoUrl)
+        public async Task<VideoInfoModel> GetVideoInfoAsync(string videoUrl, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                var video = await _youtube.Videos.GetAsync(videoUrl);
+                if (!IsValidYoutubeUrl(videoUrl))
+                    throw new ArgumentException("Geçersiz YouTube bağlantısı.");
+
+                var video = await _youtube.Videos.GetAsync(videoUrl, cancellationToken);
 
                 return new VideoInfoModel
                 {
@@ -41,12 +44,15 @@ namespace youtVideoDownloader.Services
             }
         }
 
-        public async Task<string> DownloadMediaAsync(string videoUrl, string format, string quality, IProgress<double> progress)
+        public async Task<string> DownloadMediaAsync(string videoUrl, string format, string quality, IProgress<double> progress, System.Threading.CancellationToken cancellationToken = default)
         {
             try
             {
-                var video = await _youtube.Videos.GetAsync(videoUrl);
-                var streamManifest = await _youtube.Videos.Streams.GetManifestAsync(videoUrl);
+                if (!IsValidYoutubeUrl(videoUrl))
+                    throw new ArgumentException("Geçersiz YouTube bağlantısı.");
+
+                var video = await _youtube.Videos.GetAsync(videoUrl, cancellationToken);
+                var streamManifest = await _youtube.Videos.Streams.GetManifestAsync(videoUrl, cancellationToken);
 
                 string safeTitle = string.Join("_", video.Title.Split(Path.GetInvalidFileNameChars()));
                 
@@ -80,7 +86,9 @@ namespace youtVideoDownloader.Services
                         throw new Exception("No suitable audio stream found.");
 
                     outputPath = Path.Combine(downloadFolder, $"{safeTitle}.mp3");
-                    await _youtube.Videos.DownloadAsync(videoUrl, outputPath, builder => builder.SetPreset(ConversionPreset.UltraFast), progress);
+                    EnsureSecurePath(downloadFolder, outputPath);
+
+                    await _youtube.Videos.DownloadAsync(videoUrl, outputPath, builder => builder.SetPreset(ConversionPreset.UltraFast), progress, cancellationToken);
                 }
                 else
                 {
@@ -113,8 +121,9 @@ namespace youtVideoDownloader.Services
                     var streamInfos = new IStreamInfo[] { audioStreamInfo, videoStreamInfo };
                     
                     outputPath = Path.Combine(downloadFolder, $"{safeTitle}.mp4");
+                    EnsureSecurePath(downloadFolder, outputPath);
 
-                    await _youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(outputPath).SetPreset(ConversionPreset.UltraFast).Build(), progress);
+                    await _youtube.Videos.DownloadAsync(streamInfos, new ConversionRequestBuilder(outputPath).SetPreset(ConversionPreset.UltraFast).Build(), progress, cancellationToken);
                 }
 
                 return outputPath;
@@ -123,6 +132,30 @@ namespace youtVideoDownloader.Services
             {
                 System.Diagnostics.Debug.WriteLine($"Error downloading media: {ex.Message}");
                 throw;
+            }
+        }
+
+        private bool IsValidYoutubeUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+            
+            if (Uri.TryCreate(url, UriKind.Absolute, out Uri uriResult) && 
+                (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+            {
+                var host = uriResult.Host.ToLower();
+                return host.Contains("youtube.com") || host.Contains("youtu.be");
+            }
+            return false;
+        }
+
+        private void EnsureSecurePath(string baseFolder, string fullPath)
+        {
+            var baseDir = new DirectoryInfo(baseFolder).FullName;
+            var targetDir = new FileInfo(fullPath).Directory.FullName;
+
+            if (!targetDir.StartsWith(baseDir, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new UnauthorizedAccessException("Güvenlik ihlali: Geçersiz dosya dizini yolu (Path Traversal attempt).");
             }
         }
     }
