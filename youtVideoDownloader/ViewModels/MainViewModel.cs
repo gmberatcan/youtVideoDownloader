@@ -195,7 +195,7 @@ namespace youtVideoDownloader.ViewModels
                     if (p < 0)
                     {
                         StatusText = "İndirildi, işleniyor (Lütfen bekleyin)...";
-                        _notificationService.ShowProgressNotification("İşleniyor...", 99, 100);
+                        _notificationService.ShowProgressNotification("İşleniyor...", -1, 100);
                         return;
                     }
 

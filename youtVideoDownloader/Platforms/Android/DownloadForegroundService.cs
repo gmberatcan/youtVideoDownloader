@@ -59,12 +59,21 @@ namespace youtVideoDownloader.Platforms.Android
 
             var builder = new NotificationCompat.Builder(this, ChannelId)
                 .SetContentTitle(title)
-                .SetContentText($"%{progress}")
                 .SetSmallIcon(global::Android.Resource.Drawable.StatSysDownload)
                 .SetPriority(NotificationCompat.PriorityLow)
                 .SetOngoing(true)
-                .SetOnlyAlertOnce(true)
-                .SetProgress(100, progress, false);
+                .SetOnlyAlertOnce(true);
+
+            if (progress < 0)
+            {
+                builder.SetContentText("Lütfen bekleyin...")
+                       .SetProgress(0, 0, true);
+            }
+            else
+            {
+                builder.SetContentText($"%{progress}")
+                       .SetProgress(100, progress, false);
+            }
 
             return builder.Build();
         }

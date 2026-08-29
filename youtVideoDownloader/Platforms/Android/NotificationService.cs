@@ -26,15 +26,17 @@ namespace youtVideoDownloader.Platforms.Android
 
         private DateTime _lastUpdateTime = DateTime.MinValue;
         private int _lastProgress = -1;
+        private string _lastTitle = "";
         private bool _isServiceRunning = false;
 
         public void ShowProgressNotification(string title, int progress, int max)
         {
-            if (progress == _lastProgress) return;
-            if (progress < max && (DateTime.Now - _lastUpdateTime).TotalMilliseconds < 500) return;
+            if (progress == _lastProgress && title == _lastTitle) return;
+            if (progress < max && title == _lastTitle && (DateTime.Now - _lastUpdateTime).TotalMilliseconds < 500) return;
 
             _lastUpdateTime = DateTime.Now;
             _lastProgress = progress;
+            _lastTitle = title;
 
             var context = global::Android.App.Application.Context;
             var intent = new Intent(context, typeof(DownloadForegroundService));
