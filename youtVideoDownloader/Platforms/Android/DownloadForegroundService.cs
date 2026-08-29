@@ -2,6 +2,8 @@ using Android.App;
 using Android.Content;
 using Android.OS;
 using AndroidX.Core.App;
+using CommunityToolkit.Mvvm.Messaging;
+using youtVideoDownloader.Messages;
 
 namespace youtVideoDownloader.Platforms.Android
 {
@@ -11,6 +13,7 @@ namespace youtVideoDownloader.Platforms.Android
         public const string ACTION_START_SERVICE = "ACTION_START_SERVICE";
         public const string ACTION_STOP_SERVICE = "ACTION_STOP_SERVICE";
         public const string ACTION_UPDATE_PROGRESS = "ACTION_UPDATE_PROGRESS";
+        public const string ACTION_CANCEL_DOWNLOAD = "ACTION_CANCEL_DOWNLOAD";
 
         private const int NotificationId = 1001;
         private const string ChannelId = "download_channel";
@@ -43,6 +46,12 @@ namespace youtVideoDownloader.Platforms.Android
                 StopForeground(StopForegroundFlags.Remove);
                 StopSelf();
             }
+            else if (intent?.Action == ACTION_CANCEL_DOWNLOAD)
+            {
+                WeakReferenceMessenger.Default.Send(new CancelDownloadMessage());
+                StopForeground(StopForegroundFlags.Remove);
+                StopSelf();
+            }
 
             return StartCommandResult.Sticky;
         }
@@ -57,12 +66,24 @@ namespace youtVideoDownloader.Platforms.Android
                 notificationManager.CreateNotificationChannel(channel);
             }
 
+            var cancelIntent = new Intent(this, typeof(DownloadForegroundService));
+            cancelIntent.SetAction(ACTION_CANCEL_DOWNLOAD);
+            
+            var pendingIntentFlags = PendingIntentFlags.UpdateCurrent;
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.M)
+            {
+                pendingIntentFlags |= PendingIntentFlags.Immutable;
+            }
+                
+            var cancelPendingIntent = PendingIntent.GetService(this, 0, cancelIntent, pendingIntentFlags);
+
             var builder = new NotificationCompat.Builder(this, ChannelId)
                 .SetContentTitle(title)
                 .SetSmallIcon(global::Android.Resource.Drawable.StatSysDownload)
                 .SetPriority(NotificationCompat.PriorityLow)
                 .SetOngoing(true)
-                .SetOnlyAlertOnce(true);
+                .SetOnlyAlertOnce(true)
+                .AddAction(global::Android.Resource.Drawable.IcMenuCloseClearCancel, "İptal Et", cancelPendingIntent);
 
             if (progress < 0)
             {

@@ -3,9 +3,13 @@ using System.Collections.ObjectModel;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using youtVideoDownloader.Models;
 using youtVideoDownloader.Services;
+using youtVideoDownloader.Messages;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
+using System.Linq;
+using Microsoft.Maui.ApplicationModel;
 
 namespace youtVideoDownloader.ViewModels
 {
@@ -54,6 +58,18 @@ namespace youtVideoDownloader.ViewModels
         {
             _youtubeService = youtubeService;
             _notificationService = notificationService;
+
+            WeakReferenceMessenger.Default.Register<CancelDownloadMessage>(this, (r, m) =>
+            {
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    var vm = (MainViewModel)r;
+                    if (vm.CancelCommand.CanExecute(null))
+                    {
+                        vm.CancelCommand.Execute(null);
+                    }
+                });
+            });
         }
 
         partial void OnSelectedFormatChanged(string value)
@@ -182,11 +198,14 @@ namespace youtVideoDownloader.ViewModels
             IsDownloading = true;
             IsBusy = true;
             DownloadProgress = 0;
-            StatusText = "Downloading...";
+            StatusText = "İndirme başlatılıyor...";
 
             _cancellationTokenSource = new System.Threading.CancellationTokenSource();
 
             string title = VideoInfo?.Title ?? "Download";
+
+            // Show initial notification immediately so the user doesn't wait 5-10 seconds
+            _notificationService.ShowProgressNotification(title, 0, 100);
 
             try
             {
@@ -210,18 +229,18 @@ namespace youtVideoDownloader.ViewModels
 
                 string path = await Task.Run(() => _youtubeService.DownloadMediaAsync(VideoUrl, SelectedFormat, SelectedQuality, progress, _cancellationTokenSource.Token));
                 
-                StatusText = $"Saved to: {path}";
-                _notificationService.CompleteProgressNotification("Download Complete", $"Saved: {title}");
+                StatusText = $"Kaydedildi: {path}";
+                _notificationService.CompleteProgressNotification("İndirme Tamamlandı", $"Kaydedildi: {title}");
             }
             catch (OperationCanceledException)
             {
-                StatusText = "Download cancelled.";
+                StatusText = "İndirme iptal edildi.";
                 _notificationService.CancelProgressNotification();
             }
             catch (Exception ex)
             {
-                StatusText = $"Download Failed: {ex.Message}";
-                _notificationService.CompleteProgressNotification("Download Failed", "An error occurred during download.");
+                StatusText = $"İndirme Başarısız: {ex.Message}";
+                _notificationService.CompleteProgressNotification("İndirme Başarısız", "İndirme sırasında bir hata oluştu.");
             }
             finally
             {

@@ -11,6 +11,7 @@ namespace youtVideoDownloader.Platforms.Android
         private NotificationManager _notificationManager;
         private NotificationCompat.Builder _builder;
         private const int NotificationId = 1001;
+        private const int CompleteNotificationId = 1002;
         private const string ChannelId = "download_channel";
 
         public NotificationService()
@@ -66,13 +67,14 @@ namespace youtVideoDownloader.Platforms.Android
                 .SetOngoing(false)
                 .SetProgress(0, 0, false);
 
-            _notificationManager.Notify(NotificationId, _builder.Build());
+            _notificationManager.Notify(CompleteNotificationId, _builder.Build());
         }
         
         public void CancelProgressNotification()
         {
             StopForegroundService();
             _notificationManager.Cancel(NotificationId);
+            _notificationManager.Cancel(CompleteNotificationId);
         }
 
         private void StopForegroundService()
