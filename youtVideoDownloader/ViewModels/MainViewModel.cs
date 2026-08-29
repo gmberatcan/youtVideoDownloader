@@ -192,11 +192,19 @@ namespace youtVideoDownloader.ViewModels
             {
                 var progress = new Progress<double>(p =>
                 {
+                    if (p < 0)
+                    {
+                        StatusText = "İndirildi, işleniyor (Lütfen bekleyin)...";
+                        _notificationService.ShowProgressNotification("İşleniyor...", 99, 100);
+                        return;
+                    }
+
                     // p is between 0.0 and 1.0 from YoutubeExplode
                     DownloadProgress = p;
-                    StatusText = $"Downloading... {(p * 100):0.0}%";
                     
                     int currentProgress = (int)(p * 100);
+                    
+                    StatusText = $"İndiriliyor... {currentProgress}%";
                     _notificationService.ShowProgressNotification(title, currentProgress, 100);
                 });
 

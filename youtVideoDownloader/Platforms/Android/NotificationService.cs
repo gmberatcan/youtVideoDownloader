@@ -26,6 +26,7 @@ namespace youtVideoDownloader.Platforms.Android
 
         private DateTime _lastUpdateTime = DateTime.MinValue;
         private int _lastProgress = -1;
+        private bool _isServiceRunning = false;
 
         public void ShowProgressNotification(string title, int progress, int max)
         {
@@ -35,24 +36,27 @@ namespace youtVideoDownloader.Platforms.Android
             _lastUpdateTime = DateTime.Now;
             _lastProgress = progress;
 
-            if (_builder == null)
+            var context = global::Android.App.Application.Context;
+            var intent = new Intent(context, typeof(DownloadForegroundService));
+            intent.SetAction(_isServiceRunning ? DownloadForegroundService.ACTION_UPDATE_PROGRESS : DownloadForegroundService.ACTION_START_SERVICE);
+            intent.PutExtra("title", title);
+            intent.PutExtra("progress", progress);
+
+            if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
             {
-                _builder = new NotificationCompat.Builder(global::Android.App.Application.Context, ChannelId)
-                    .SetSmallIcon(global::Android.Resource.Drawable.StatSysDownload)
-                    .SetPriority(NotificationCompat.PriorityLow)
-                    .SetOngoing(true)
-                    .SetOnlyAlertOnce(true);
+                context.StartForegroundService(intent);
             }
-
-            _builder.SetContentTitle(title)
-                    .SetContentText($"%{progress}")
-                    .SetProgress(max, progress, false);
-
-            _notificationManager.Notify(NotificationId, _builder.Build());
+            else
+            {
+                context.StartService(intent);
+            }
+            _isServiceRunning = true;
         }
 
         public void CompleteProgressNotification(string title, string message)
         {
+            StopForegroundService();
+
             _builder = new NotificationCompat.Builder(global::Android.App.Application.Context, ChannelId)
                 .SetContentTitle(title)
                 .SetContentText(message)
@@ -65,7 +69,20 @@ namespace youtVideoDownloader.Platforms.Android
         
         public void CancelProgressNotification()
         {
+            StopForegroundService();
             _notificationManager.Cancel(NotificationId);
+        }
+
+        private void StopForegroundService()
+        {
+            if (_isServiceRunning)
+            {
+                var context = global::Android.App.Application.Context;
+                var intent = new Intent(context, typeof(DownloadForegroundService));
+                intent.SetAction(DownloadForegroundService.ACTION_STOP_SERVICE);
+                context.StartService(intent);
+                _isServiceRunning = false;
+            }
         }
     }
 }

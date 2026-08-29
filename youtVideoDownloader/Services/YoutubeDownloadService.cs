@@ -130,6 +130,8 @@ namespace youtVideoDownloader.Services
                     tempOutputPath = Path.Combine(tempFolder, $"{safeTitle}_converted.mp3");
                     if (File.Exists(tempOutputPath)) File.Delete(tempOutputPath);
 
+                    progress?.Report(-1.0); // Signal processing (conversion) phase
+
                     string command = $"-y -i \"{tempAudioPath}\" -vn -ar 44100 -ac 2 -b:a 192k \"{tempOutputPath}\"";
                     var session = await FFmpegKit.ExecuteAsync(command);
                     var returnCode = session.ReturnCode;
@@ -184,7 +186,7 @@ namespace youtVideoDownloader.Services
                     await _youtube.Videos.Streams.DownloadAsync(videoStreamInfo, tempVideoPath, videoProgress, cancellationToken);
                     await _youtube.Videos.Streams.DownloadAsync(audioStreamInfo, tempAudioPath, audioProgress, cancellationToken);
 
-                    progress?.Report(0.95); // Muxing phase
+                    progress?.Report(-1.0); // Signal processing (muxing) phase
 
                     if (File.Exists(finalOutputPath)) File.Delete(finalOutputPath);
 
