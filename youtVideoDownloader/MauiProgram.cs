@@ -19,6 +19,11 @@ namespace youtVideoDownloader
                 });
 
             builder.Services.AddSingleton<IYoutubeDownloadService, YoutubeDownloadService>();
+#if ANDROID
+            builder.Services.AddSingleton<INotificationService, youtVideoDownloader.Platforms.Android.NotificationService>();
+#else
+            builder.Services.AddSingleton<INotificationService, DummyNotificationService>();
+#endif
             builder.Services.AddTransient<ViewModels.MainViewModel>();
             builder.Services.AddTransient<MainPage>();
 

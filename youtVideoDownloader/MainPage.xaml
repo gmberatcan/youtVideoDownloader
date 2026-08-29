@@ -5,6 +5,7 @@
              xmlns:models="clr-namespace:youtVideoDownloader.Models"
              x:Class="youtVideoDownloader.MainPage"
              x:DataType="viewmodels:MainViewModel"
+             Shell.NavBarIsVisible="False"
              BackgroundColor="{StaticResource AppBackground}">
 
     <ScrollView>
@@ -23,12 +24,12 @@
                 <Border Stroke="{StaticResource DividerColor}" BackgroundColor="{StaticResource CardBackground}" StrokeThickness="1" StrokeShape="RoundRectangle 8" Padding="10,0">
                     <Grid ColumnDefinitions="*, Auto">
                         <Entry Grid.Column="0" Text="{Binding VideoUrl}" Placeholder="Paste YouTube link here..." PlaceholderColor="{StaticResource TextSecondary}" TextColor="{StaticResource TextPrimary}" BackgroundColor="Transparent" VerticalOptions="Center"/>
-                        <ImageButton Grid.Column="1" Command="{Binding PasteFromClipboardCommand}" Source="dotnet_bot.png" WidthRequest="24" HeightRequest="24" VerticalOptions="Center" Opacity="0.5"/>
+                        <Button Grid.Column="1" Command="{Binding PasteFromClipboardCommand}" Text="PASTE" BackgroundColor="Transparent" TextColor="{StaticResource PrimaryAccent}" FontAttributes="Bold" VerticalOptions="Center" Margin="5,0"/>
                     </Grid>
                 </Border>
 
                 <!-- Fetch Button -->
-                <Button Text="🔍 Fetch Video Info" Command="{Binding FetchVideoInfoCommand}" BackgroundColor="Transparent" TextColor="{StaticResource TextPrimary}" HorizontalOptions="Center" Margin="0,10,0,0"/>
+                <Button Text="Get Video Info" Command="{Binding FetchVideoInfoCommand}" BackgroundColor="{StaticResource PrimaryAccent}" TextColor="White" FontFamily="OpenSansSemibold" CornerRadius="8" HeightRequest="50" Margin="0,10,0,0"/>
             </VerticalStackLayout>
 
             <!-- Loading Indicator -->
@@ -65,14 +66,20 @@
                         <VerticalStackLayout Grid.Column="0" Spacing="5">
                             <Label Text="Format" TextColor="{StaticResource TextSecondary}" FontSize="12"/>
                             <Border Stroke="{StaticResource DividerColor}" BackgroundColor="{StaticResource CardBackgroundLight}" StrokeThickness="1" StrokeShape="RoundRectangle 8">
-                                <Picker ItemsSource="{Binding Formats}" SelectedItem="{Binding SelectedFormat}" TextColor="{StaticResource TextPrimary}" TitleColor="{StaticResource TextPrimary}" Margin="10,0"/>
+                                <Grid>
+                                    <Picker ItemsSource="{Binding Formats}" SelectedItem="{Binding SelectedFormat}" TextColor="{StaticResource TextPrimary}" TitleColor="{StaticResource TextPrimary}" BackgroundColor="Transparent" Margin="10,0,30,0"/>
+                                    <Label Text="▼" FontSize="12" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" HorizontalOptions="End" Margin="0,0,12,0" InputTransparent="True" />
+                                </Grid>
                             </Border>
                         </VerticalStackLayout>
                         
                         <VerticalStackLayout Grid.Column="1" Spacing="5">
                             <Label Text="Quality" TextColor="{StaticResource TextSecondary}" FontSize="12"/>
                             <Border Stroke="{StaticResource DividerColor}" BackgroundColor="{StaticResource CardBackgroundLight}" StrokeThickness="1" StrokeShape="RoundRectangle 8">
-                                <Picker ItemsSource="{Binding Qualities}" SelectedItem="{Binding SelectedQuality}" TextColor="{StaticResource TextPrimary}" TitleColor="{StaticResource TextPrimary}" Margin="10,0"/>
+                                <Grid>
+                                    <Picker ItemsSource="{Binding Qualities}" SelectedItem="{Binding SelectedQuality}" TextColor="{StaticResource TextPrimary}" TitleColor="{StaticResource TextPrimary}" BackgroundColor="Transparent" Margin="10,0,30,0"/>
+                                    <Label Text="▼" FontSize="12" TextColor="{StaticResource TextSecondary}" VerticalOptions="Center" HorizontalOptions="End" Margin="0,0,12,0" InputTransparent="True" />
+                                </Grid>
                             </Border>
                         </VerticalStackLayout>
                     </Grid>

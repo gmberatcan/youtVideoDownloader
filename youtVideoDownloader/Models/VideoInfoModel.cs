@@ -13,5 +13,6 @@ namespace youtVideoDownloader.Models
         public TimeSpan Duration { get; set; }
         public string? ThumbnailUrl { get; set; }
         public string VideoUrl { get; set; } = string.Empty;
+        public List<string> AvailableQualities { get; set; } = new();
     }
 }

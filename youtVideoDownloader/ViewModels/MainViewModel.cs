@@ -48,9 +48,43 @@ namespace youtVideoDownloader.ViewModels
         [ObservableProperty]
         private bool _isDownloading;
 
-        public MainViewModel(IYoutubeDownloadService youtubeService)
+        private readonly INotificationService _notificationService;
+
+        public MainViewModel(IYoutubeDownloadService youtubeService, INotificationService notificationService)
         {
             _youtubeService = youtubeService;
+            _notificationService = notificationService;
+        }
+
+        partial void OnSelectedFormatChanged(string value)
+        {
+            UpdateQualities();
+        }
+
+        private void UpdateQualities()
+        {
+            Qualities.Clear();
+            if (SelectedFormat.ToLower().Contains("audio") || SelectedFormat.ToLower().Contains("mp3"))
+            {
+                Qualities.Add("Highest Bitrate");
+                SelectedQuality = "Highest Bitrate";
+            }
+            else
+            {
+                if (VideoInfo != null && VideoInfo.AvailableQualities.Any())
+                {
+                    foreach (var q in VideoInfo.AvailableQualities)
+                    {
+                        Qualities.Add(q);
+                    }
+                    SelectedQuality = Qualities.First();
+                }
+                else
+                {
+                    Qualities.Add("1080p");
+                    SelectedQuality = "1080p";
+                }
+            }
         }
 
         [RelayCommand]
@@ -73,6 +107,7 @@ namespace youtVideoDownloader.ViewModels
             {
                 _cancellationTokenSource.Cancel();
                 StatusText = "Cancelling...";
+                _notificationService.CancelProgressNotification();
             }
         }
 
@@ -91,7 +126,10 @@ namespace youtVideoDownloader.ViewModels
 
             try
             {
-                VideoInfo = await _youtubeService.GetVideoInfoAsync(VideoUrl, _cancellationTokenSource.Token);
+                VideoInfo = await Task.Run(() => _youtubeService.GetVideoInfoAsync(VideoUrl, _cancellationTokenSource.Token));
+                
+                UpdateQualities();
+
                 HasVideoInfo = true;
                 StatusText = string.Empty;
             }
@@ -117,12 +155,38 @@ namespace youtVideoDownloader.ViewModels
             if (string.IsNullOrWhiteSpace(VideoUrl) || VideoInfo == null)
                 return;
 
+#if ANDROID
+            if (Microsoft.Maui.Devices.DeviceInfo.Version.Major < 13)
+            {
+                var status = await Microsoft.Maui.ApplicationModel.Permissions.CheckStatusAsync<Microsoft.Maui.ApplicationModel.Permissions.StorageWrite>();
+                if (status != Microsoft.Maui.ApplicationModel.PermissionStatus.Granted)
+                {
+                    status = await Microsoft.Maui.ApplicationModel.Permissions.RequestAsync<Microsoft.Maui.ApplicationModel.Permissions.StorageWrite>();
+                }
+                if (status != Microsoft.Maui.ApplicationModel.PermissionStatus.Granted)
+                {
+                    StatusText = "Storage permission is required to save videos.";
+                    return;
+                }
+            }
+            else
+            {
+                var notifyStatus = await Microsoft.Maui.ApplicationModel.Permissions.CheckStatusAsync<Microsoft.Maui.ApplicationModel.Permissions.PostNotifications>();
+                if (notifyStatus != Microsoft.Maui.ApplicationModel.PermissionStatus.Granted)
+                {
+                    await Microsoft.Maui.ApplicationModel.Permissions.RequestAsync<Microsoft.Maui.ApplicationModel.Permissions.PostNotifications>();
+                }
+            }
+#endif
+
             IsDownloading = true;
             IsBusy = true;
             DownloadProgress = 0;
             StatusText = "Downloading...";
 
             _cancellationTokenSource = new System.Threading.CancellationTokenSource();
+
+            string title = VideoInfo?.Title ?? "Download";
 
             try
             {
@@ -131,19 +195,25 @@ namespace youtVideoDownloader.ViewModels
                     // p is between 0.0 and 1.0 from YoutubeExplode
                     DownloadProgress = p;
                     StatusText = $"Downloading... {(p * 100):0.0}%";
+                    
+                    int currentProgress = (int)(p * 100);
+                    _notificationService.ShowProgressNotification(title, currentProgress, 100);
                 });
 
-                string path = await _youtubeService.DownloadMediaAsync(VideoUrl, SelectedFormat, SelectedQuality, progress, _cancellationTokenSource.Token);
+                string path = await Task.Run(() => _youtubeService.DownloadMediaAsync(VideoUrl, SelectedFormat, SelectedQuality, progress, _cancellationTokenSource.Token));
                 
                 StatusText = $"Saved to: {path}";
+                _notificationService.CompleteProgressNotification("Download Complete", $"Saved: {title}");
             }
             catch (OperationCanceledException)
             {
                 StatusText = "Download cancelled.";
+                _notificationService.CancelProgressNotification();
             }
             catch (Exception ex)
             {
                 StatusText = $"Download Failed: {ex.Message}";
+                _notificationService.CompleteProgressNotification("Download Failed", "An error occurred during download.");
             }
             finally
             {
