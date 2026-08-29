@@ -7,5 +7,11 @@ namespace youtVideoDownloader
             InitializeComponent();
             BindingContext = viewModel;
         }
+
+        public MainPage()
+        {
+            InitializeComponent();
+            BindingContext = Application.Current.MainPage?.Handler?.MauiContext?.Services?.GetService<ViewModels.MainViewModel>();
+        }
     }
 }
