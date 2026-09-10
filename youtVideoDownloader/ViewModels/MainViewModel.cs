@@ -205,26 +205,41 @@ namespace youtVideoDownloader.ViewModels
             string title = VideoInfo?.Title ?? "Download";
 
             // Show initial notification immediately so the user doesn't wait 5-10 seconds
-            _notificationService.ShowProgressNotification(title, 0, 100);
+            _notificationService.ShowProgressNotification(title, -2, 100);
 
             try
             {
                 var progress = new Progress<double>(p =>
                 {
-                    if (p < 0)
+                    if (p == -2.0)
                     {
-                        StatusText = "İndirildi, işleniyor (Lütfen bekleyin)...";
-                        _notificationService.ShowProgressNotification("İşleniyor...", -1, 100);
+                        StatusText = "İndirme başlatılıyor...";
+                        _notificationService.ShowProgressNotification(title, -2, 100);
+                        return;
+                    }
+                    if (p == -1.0)
+                    {
+                        StatusText = "İşleniyor (Lütfen bekleyin)...";
+                        _notificationService.ShowProgressNotification(title, -1, 100);
                         return;
                     }
 
-                    // p is between 0.0 and 1.0 from YoutubeExplode
-                    DownloadProgress = p;
-                    
-                    int currentProgress = (int)(p * 100);
-                    
-                    StatusText = $"İndiriliyor... {currentProgress}%";
-                    _notificationService.ShowProgressNotification(title, currentProgress, 100);
+                    if (p >= 1.0)
+                    {
+                        // p >= 1.0 means muxing. Subtract 1 to get muxing progress (0.0 to 1.0)
+                        int muxProgress = (int)((p - 1.0) * 100);
+                        muxProgress = Math.Clamp(muxProgress, 0, 99);
+                        DownloadProgress = (p - 1.0);
+                        StatusText = $"Video işleniyor... %{muxProgress}";
+                        _notificationService.ShowProgressNotification($"İşleniyor: {title}", muxProgress, 100);
+                    }
+                    else if (p >= 0.0)
+                    {
+                        DownloadProgress = p;
+                        int currentProgress = (int)(p * 100);
+                        StatusText = $"İndiriliyor... %{currentProgress}";
+                        _notificationService.ShowProgressNotification(title, currentProgress, 100);
+                    }
                 });
 
                 string path = await Task.Run(() => _youtubeService.DownloadMediaAsync(VideoUrl, SelectedFormat, SelectedQuality, progress, _cancellationTokenSource.Token));

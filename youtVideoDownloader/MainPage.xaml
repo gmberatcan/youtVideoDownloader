@@ -86,18 +86,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- Download Progress Area -->
-            <Border IsVisible="{Binding IsDownloading}" BackgroundColor="{StaticResource CardBackground}" Stroke="{StaticResource PrimaryAccent}" StrokeThickness="1" StrokeShape="RoundRectangle 12" Padding="15">
-                <VerticalStackLayout Spacing="10">
-                    <Grid>
-                        <Label Text="Downloading..." TextColor="{StaticResource PrimaryAccent}" FontFamily="OpenSansSemibold" HorizontalOptions="Start"/>
-                        <!-- We would calculate MB/s and Time left here, for now it uses StatusText from viewmodel -->
-                        <Label Text="{Binding DownloadProgress, StringFormat='{0:P0}'}" TextColor="{StaticResource TextPrimary}" FontFamily="OpenSansSemibold" HorizontalOptions="End"/>
-                    </Grid>
-                    
-                    <ProgressBar Progress="{Binding DownloadProgress}" ProgressColor="{StaticResource PrimaryAccent}" />
-                </VerticalStackLayout>
-            </Border>
+
 
             <!-- Download Button -->
             <Button IsVisible="{Binding HasVideoInfo}" Text="⬇ Download Now" Command="{Binding DownloadCommand}" BackgroundColor="{StaticResource CardBackgroundLight}" TextColor="{StaticResource TextPrimary}" FontFamily="OpenSansSemibold" CornerRadius="8" HeightRequest="50"/>

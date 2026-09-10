@@ -85,7 +85,12 @@ namespace youtVideoDownloader.Platforms.Android
                 .SetOnlyAlertOnce(true)
                 .AddAction(global::Android.Resource.Drawable.IcMenuCloseClearCancel, "İptal Et", cancelPendingIntent);
 
-            if (progress < 0)
+            if (progress == -2)
+            {
+                builder.SetContentText("İndirme başlatılıyor...")
+                       .SetProgress(0, 0, true);
+            }
+            else if (progress < 0)
             {
                 builder.SetContentText("Lütfen bekleyin...")
                        .SetProgress(0, 0, true);

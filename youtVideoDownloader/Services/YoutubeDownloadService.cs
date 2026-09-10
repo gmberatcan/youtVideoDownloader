@@ -132,8 +132,23 @@ namespace youtVideoDownloader.Services
 
                     progress?.Report(-1.0); // Signal processing (conversion) phase
 
+                    double expectedSize = new FileInfo(tempAudioPath).Length;
+
                     string command = $"-y -i \"{tempAudioPath}\" -vn -ar 44100 -ac 2 -b:a 192k \"{tempOutputPath}\"";
-                    var session = await FFmpegKit.ExecuteAsync(command);
+                    
+                    var sessionTask = FFmpegKit.ExecuteAsync(command);
+                    while (!sessionTask.IsCompleted)
+                    {
+                        await Task.Delay(500, cancellationToken);
+                        if (File.Exists(tempOutputPath))
+                        {
+                            double currentSize = new FileInfo(tempOutputPath).Length;
+                            double muxProgress = currentSize / expectedSize;
+                            progress?.Report(1.0 + Math.Min(muxProgress, 0.99));
+                        }
+                    }
+
+                    var session = await sessionTask;
                     var returnCode = session.ReturnCode;
 
                     if (File.Exists(tempAudioPath)) File.Delete(tempAudioPath);
@@ -194,8 +209,23 @@ namespace youtVideoDownloader.Services
                     tempOutputPath = Path.Combine(tempFolder, $"{safeTitle}_muxed.mp4");
                     if (File.Exists(tempOutputPath)) File.Delete(tempOutputPath);
 
+                    double expectedSize = new FileInfo(tempVideoPath).Length + new FileInfo(tempAudioPath).Length;
+
                     string command = $"-y -i \"{tempVideoPath}\" -i \"{tempAudioPath}\" -c:v copy -c:a aac \"{tempOutputPath}\"";
-                    var session = await FFmpegKit.ExecuteAsync(command);
+                    
+                    var sessionTask = FFmpegKit.ExecuteAsync(command);
+                    while (!sessionTask.IsCompleted)
+                    {
+                        await Task.Delay(500, cancellationToken);
+                        if (File.Exists(tempOutputPath))
+                        {
+                            double currentSize = new FileInfo(tempOutputPath).Length;
+                            double muxProgress = currentSize / expectedSize;
+                            progress?.Report(1.0 + Math.Min(muxProgress, 0.99));
+                        }
+                    }
+
+                    var session = await sessionTask;
                     var returnCode = session.ReturnCode;
 
                     if (File.Exists(tempVideoPath)) File.Delete(tempVideoPath);
@@ -207,7 +237,7 @@ namespace youtVideoDownloader.Services
                         throw new Exception($"FFmpegKit failed to mux video. {logs}");
                     }
                     
-                    progress?.Report(1.0);
+                    progress?.Report(2.0); // Completed
 #else
                     tempOutputPath = Path.Combine(tempFolder, $"{safeTitle}.mp4");
                     var streamInfos = new IStreamInfo[] { audioStreamInfo, videoStreamInfo };
